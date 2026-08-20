@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/monitor"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua"
+	"github.com/maestrohub-labs/opcua/monitor"
+	"github.com/maestrohub-labs/opcua/ua"
 	"github.com/stretchr/testify/require"
 )
 

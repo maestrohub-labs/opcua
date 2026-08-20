@@ -16,11 +16,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gopcua/opcua/errors"
-	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uacp"
-	"github.com/gopcua/opcua/uapolicy"
-	"github.com/gopcua/opcua/uasc"
+	"github.com/maestrohub-labs/opcua/errors"
+	"github.com/maestrohub-labs/opcua/ua"
+	"github.com/maestrohub-labs/opcua/uacp"
+	"github.com/maestrohub-labs/opcua/uapolicy"
+	"github.com/maestrohub-labs/opcua/uasc"
 )
 
 const (
