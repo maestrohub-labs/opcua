@@ -460,6 +460,12 @@ func (c *Client) monitor(ctx context.Context) {
 						dlog.Printf("trying to restore session")
 						if err := c.ActivateSession(ctx, s); err != nil {
 							dlog.Printf("restore session failed: %v", err)
+							// The session is no longer the client's (cleared
+							// above), and a failed restore does not mean the
+							// server closed it: the answer may have been lost
+							// with the channel. Hand it over so it can be closed
+							// rather than left on the server.
+							c.abandonSession(s)
 							action = recreateSession
 							continue
 						}
@@ -482,8 +488,14 @@ func (c *Client) monitor(ctx context.Context) {
 						c.setState(ctx, Reconnecting)
 						// create a new session to replace the previous one
 
-						// clear any previous session as we know the server has closed it
-						// this also prevents any unnecessary calls to CloseSession
+						// Stop using any previous session. Reached from restoreSession
+						// the session is already cleared (and was handed over there);
+						// reached from an error that named the session invalid, the
+						// server has closed it, and handing it over costs one
+						// activation that the server refuses.
+						if old := c.Session(); old != nil {
+							c.abandonSession(old)
+						}
 						c.setSession(nil)
 
 						dlog.Printf("trying to recreate session")
@@ -495,6 +507,8 @@ func (c *Client) monitor(ctx context.Context) {
 						}
 						if err := c.ActivateSession(ctx, s); err != nil {
 							dlog.Printf("reactivate session failed: %v", err)
+							// Created on the server but never the client's.
+							c.abandonSession(s)
 							action = createSecureChannel
 							continue
 						}
@@ -743,6 +757,14 @@ func (c *Client) SecureChannel() *uasc.SecureChannel {
 func (c *Client) setSecureChannel(sc *uasc.SecureChannel) {
 	c.atomicSechan.Store(sc)
 	stats.Client().Add("SecureChannel", 1)
+}
+
+// abandonSession tells OnSessionAbandoned, when set, of a session the
+// client stops using without closing it.
+func (c *Client) abandonSession(s *Session) {
+	if s != nil && c.cfg.onSessionAbandoned != nil {
+		c.cfg.onSessionAbandoned(s)
+	}
 }
 
 // Session returns the active session.

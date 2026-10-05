@@ -62,6 +62,9 @@ type Config struct {
 	session   *uasc.SessionConfig
 	stateCh   chan<- ConnState
 	stateFunc func(ConnState)
+	// onSessionAbandoned is told of a session the reconnect monitor gives
+	// up on without closing it (see OnSessionAbandoned).
+	onSessionAbandoned func(*Session)
 }
 
 func DefaultDialer() *uacp.Dialer {
@@ -118,6 +121,20 @@ func ApplicationURI(s string) Option {
 func AutoReconnect(b bool) Option {
 	return func(cfg *Config) error {
 		cfg.sechan.AutoReconnect = b
+		return nil
+	}
+}
+
+// OnSessionAbandoned registers f to be told of every session the
+// auto-reconnect monitor stops using without closing it: a session it
+// could not restore on a new secure channel, and one it created but could
+// not activate. Such a session may still be open on the server, which
+// keeps it until its session timeout — and some servers do not enforce
+// one. f runs on the monitor goroutine and must not block; the session is
+// no longer the client's, and f may close it over a channel of its own.
+func OnSessionAbandoned(f func(*Session)) Option {
+	return func(cfg *Config) error {
+		cfg.onSessionAbandoned = f
 		return nil
 	}
 }
