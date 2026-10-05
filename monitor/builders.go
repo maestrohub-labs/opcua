@@ -1,8 +1,8 @@
 package monitor
 
 import (
-	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 // buildCreateRequest builds a create request with the given handle. The

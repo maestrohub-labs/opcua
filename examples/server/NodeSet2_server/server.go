@@ -16,10 +16,10 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gopcua/opcua/debug"
-	"github.com/gopcua/opcua/schema"
-	"github.com/gopcua/opcua/server"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/debug"
+	"github.com/maestrohub-labs/opcua/schema"
+	"github.com/maestrohub-labs/opcua/server"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 var (

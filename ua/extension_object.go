@@ -5,8 +5,8 @@
 package ua
 
 import (
-	"github.com/gopcua/opcua/debug"
-	"github.com/gopcua/opcua/id"
+	"github.com/maestrohub-labs/opcua/debug"
+	"github.com/maestrohub-labs/opcua/id"
 )
 
 // eotypes contains all known extension objects.

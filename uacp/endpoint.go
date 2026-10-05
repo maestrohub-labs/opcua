@@ -9,7 +9,7 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/gopcua/opcua/errors"
+	"github.com/maestrohub-labs/opcua/errors"
 )
 
 const defaultPort = "4840"

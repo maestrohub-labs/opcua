@@ -1,4 +1,4 @@
-module github.com/gopcua/opcua
+module github.com/maestrohub-labs/opcua
 
 go 1.23
 

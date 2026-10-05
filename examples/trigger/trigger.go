@@ -11,10 +11,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/debug"
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua"
+	"github.com/maestrohub-labs/opcua/debug"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func main() {

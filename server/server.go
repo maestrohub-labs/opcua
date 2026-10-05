@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/schema"
-	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uacp"
-	"github.com/gopcua/opcua/uapolicy"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/schema"
+	"github.com/maestrohub-labs/opcua/ua"
+	"github.com/maestrohub-labs/opcua/uacp"
+	"github.com/maestrohub-labs/opcua/uapolicy"
 )
 
 //go:generate go run ../cmd/predefined-nodes/main.go

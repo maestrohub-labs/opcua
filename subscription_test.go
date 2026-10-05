@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/ua"
 	"github.com/stretchr/testify/require"
 )
 

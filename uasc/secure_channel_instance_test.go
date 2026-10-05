@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uapolicy"
+	"github.com/maestrohub-labs/opcua/ua"
+	"github.com/maestrohub-labs/opcua/uapolicy"
 	"github.com/stretchr/testify/require"
 )
 

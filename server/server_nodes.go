@@ -3,9 +3,9 @@ package server
 import (
 	"time"
 
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/server/attrs"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/server/attrs"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func CurrentTimeNode() *Node {

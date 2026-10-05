@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uapolicy"
-	"github.com/gopcua/opcua/uasc"
+	"github.com/maestrohub-labs/opcua/ua"
+	"github.com/maestrohub-labs/opcua/uapolicy"
+	"github.com/maestrohub-labs/opcua/uasc"
 )
 
 // Option is an option function type to modify the configuration.

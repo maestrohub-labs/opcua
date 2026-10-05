@@ -17,11 +17,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gopcua/opcua/debug"
-	"github.com/gopcua/opcua/errors"
-	"github.com/gopcua/opcua/ua"
-	"github.com/gopcua/opcua/uacp"
-	"github.com/gopcua/opcua/uapolicy"
+	"github.com/maestrohub-labs/opcua/debug"
+	"github.com/maestrohub-labs/opcua/errors"
+	"github.com/maestrohub-labs/opcua/ua"
+	"github.com/maestrohub-labs/opcua/uacp"
+	"github.com/maestrohub-labs/opcua/uapolicy"
 )
 
 const (

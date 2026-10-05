@@ -10,7 +10,7 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 // stats is the global statistics counter.

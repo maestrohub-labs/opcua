@@ -3,7 +3,7 @@ package monitor
 import (
 	"testing"
 
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func TestBuildCreateRequestKeepsCallerParameters(t *testing.T) {

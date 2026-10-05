@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 // TestReadNonValueAttribute_AccessLevelValueOnly verifies that a Variable whose

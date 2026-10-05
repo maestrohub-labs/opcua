@@ -49,9 +49,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/server"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua"
+	"github.com/maestrohub-labs/opcua/server"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func TestPrivateKeyFilePKCS8Handshake(t *testing.T) {

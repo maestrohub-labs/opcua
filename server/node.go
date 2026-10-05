@@ -6,10 +6,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/server/attrs"
-	"github.com/gopcua/opcua/server/refs"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/server/attrs"
+	"github.com/maestrohub-labs/opcua/server/refs"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 type Attributes map[ua.AttributeID]*ua.DataValue

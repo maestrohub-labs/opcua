@@ -5,10 +5,10 @@ import (
 	"log"
 	"testing"
 
-	"github.com/gopcua/opcua"
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/server"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/server"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func TestBrowse(t *testing.T) {

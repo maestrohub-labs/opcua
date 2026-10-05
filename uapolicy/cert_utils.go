@@ -10,7 +10,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/gopcua/opcua/debug"
+	"github.com/maestrohub-labs/opcua/debug"
 )
 
 // Thumbprint returns the thumbprint of the first DER-encoded certificate.

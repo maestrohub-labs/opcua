@@ -8,10 +8,10 @@ import (
 	"context"
 	"log"
 
-	"github.com/gopcua/opcua/id"
-	"github.com/gopcua/opcua/server"
-	"github.com/gopcua/opcua/server/attrs"
-	"github.com/gopcua/opcua/ua"
+	"github.com/maestrohub-labs/opcua/id"
+	"github.com/maestrohub-labs/opcua/server"
+	"github.com/maestrohub-labs/opcua/server/attrs"
+	"github.com/maestrohub-labs/opcua/ua"
 )
 
 func startServer() *server.Server {
