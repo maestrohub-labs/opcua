@@ -480,6 +480,16 @@ func (c *Client) monitor(ctx context.Context) {
 						}
 						dlog.Printf("namespaces updated")
 
+						// The session survived, and its subscriptions with it.
+						// Republish what the lost channel may have swallowed;
+						// restoreSubscriptions then resumes the publish loop
+						// paused above. Listing nothing here leaves activeSubs
+						// at 0 and the loop paused for good: no data, while
+						// every other request on the session still works.
+						subsToRepublish = c.SubscriptionIDs()
+						subsToRecreate = nil
+						availableSeqs = map[uint32][]uint32{}
+
 						action = restoreSubscriptions
 
 					case recreateSession:
