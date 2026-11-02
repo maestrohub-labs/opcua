@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -134,11 +136,34 @@ func Listen(ctx context.Context, endpoint string, ack *Acknowledge) (*Listener, 
 	if err != nil {
 		return nil, err
 	}
+	tl := l.(*net.TCPListener)
+	if laddr.Port() == "0" {
+		// MAESTROHUB: port 0 asks the OS for a port while binding. The
+		// endpoint names the port the listener got, so a caller never has
+		// to probe a "free" port and bind it later (another process can
+		// take it in between).
+		endpoint, err = endpointWithPort(endpoint, tl.Addr().(*net.TCPAddr).Port)
+		if err != nil {
+			_ = tl.Close()
+			return nil, err
+		}
+	}
 	return &Listener{
-		l:        l.(*net.TCPListener),
+		l:        tl,
 		ack:      ack,
 		endpoint: endpoint,
 	}, nil
+}
+
+// endpointWithPort returns endpoint with its port replaced by port; the
+// host and any path are kept as written.
+func endpointWithPort(endpoint string, port int) (string, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
+	}
+	u.Host = net.JoinHostPort(u.Hostname(), strconv.Itoa(port))
+	return u.String(), nil
 }
 
 // Accept accepts the next incoming call and returns the new connection.

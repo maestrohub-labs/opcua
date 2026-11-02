@@ -231,6 +231,14 @@ func (s *Server) Status() *ua.ServerStatusDataType {
 	return status
 }
 
+// Addr returns the address the server listens on, or nil before Start.
+func (s *Server) Addr() net.Addr {
+	if s.l == nil {
+		return nil
+	}
+	return s.l.Addr()
+}
+
 // URLs returns opc endpoint that the server is listening on.
 func (s *Server) URLs() []string {
 	return s.cfg.endpoints
@@ -255,6 +263,18 @@ func (s *Server) Start(ctx context.Context) error {
 	s.l, err = uacp.Listen(ctx, s.url, nil)
 	if err != nil {
 		return err
+	}
+	// MAESTROHUB: a listen endpoint on port 0 was bound on a port the OS
+	// chose; name that port everywhere the listen endpoint is announced
+	// (URLs, GetEndpoints, CreateSession). Advertise-only endpoints after
+	// the first are kept as configured.
+	if bound := s.l.Endpoint(); bound != s.url {
+		for i, ep := range s.cfg.endpoints {
+			if ep == s.url {
+				s.cfg.endpoints[i] = bound
+			}
+		}
+		s.url = bound
 	}
 	log.Printf("Started listening on %v", s.URLs())
 
