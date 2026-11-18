@@ -239,7 +239,10 @@ func NewClient(endpoint string, opts ...Option) (*Client, error) {
 		stateCh:     cfg.stateCh,
 		stateFunc:   cfg.stateFunc,
 	}
-	c.pauseSubscriptions(context.Background())
+	// The publish loop starts paused by itself (monitorSubscriptions), not
+	// by a pause queued here: a resume sent right after the loop starts
+	// (Resume) could otherwise be taken before this pause, and the loop
+	// stay paused with subscriptions to publish for.
 	c.setPublishTimeout(uasc.MaxTimeout)
 	// cannot use setState here since it would trigger the stateCh
 	c.atomicState.Store(Closed)
@@ -265,33 +268,90 @@ const (
 
 // Connect establishes a secure channel and creates a new session.
 func (c *Client) Connect(ctx context.Context) error {
+	_, err := c.connect(ctx, nil, nil)
+	return err
+}
+
+// Resume establishes a secure channel and activates s on it: a session of
+// the same user that another client of this process opened, whose own
+// channel was lost while the server kept the session (Part 4, 5.6.3: a
+// session outlives its secure channel, for its timeout). The client then
+// works on s as after Connect, and subs, the subscriptions s owns (taken
+// from that client, which is expected to be closed), are this client's,
+// registered before its publish loop starts: their notifications reach
+// their Notifs channels from the first Publish. Republish asks for what
+// the server still holds of them; each PublishNotificationData carries its
+// SequenceNumber.
+//
+// The server keeps the session's identity: no transfer is needed, so a
+// server that refuses TransferSubscriptions to an anonymous user on an
+// unsecured channel (the OPC Foundation .NET stack) resumes it all the
+// same. An error means s is not this client's: the server refused the
+// activation (Bad_SessionIdInvalid or Bad_SessionClosed: it no longer has
+// it) or could not be reached; the channel is closed and s left as it was.
+func (c *Client) Resume(ctx context.Context, s *Session, subs []*Subscription) ([]*Subscription, error) {
+	if s == nil {
+		return nil, errors.Errorf("no session to resume")
+	}
+	return c.connect(ctx, s, subs)
+}
+
+// connect is Connect (resume nil) and Resume.
+func (c *Client) connect(ctx context.Context, resume *Session, subs []*Subscription) ([]*Subscription, error) {
 	// todo(fs): the secure channel is 'nil' during a re-connect
 	// todo(fs): but we expect this method to be called once during startup
 	// todo(fs): so this is probably safe
 	if c.SecureChannel() != nil {
-		return errors.Errorf("already connected")
+		return nil, errors.Errorf("already connected")
 	}
 
 	c.setState(ctx, Connecting)
 	if err := c.Dial(ctx); err != nil {
 		stats.RecordError(err)
 
-		return err
+		return nil, err
 	}
 
-	s, err := c.CreateSession(ctx, c.cfg.session)
-	if err != nil {
-		c.Close(ctx)
-		stats.RecordError(err)
+	s := resume
+	if s == nil {
+		var err error
+		s, err = c.CreateSession(ctx, c.cfg.session)
+		if err != nil {
+			c.Close(ctx)
+			stats.RecordError(err)
 
-		return err
+			return nil, err
+		}
 	}
 
 	if err := c.ActivateSession(ctx, s); err != nil {
 		c.Close(ctx)
 		stats.RecordError(err)
 
-		return err
+		return nil, err
+	}
+	if resume != nil && c.Session() != resume {
+		// ActivateSession returns nil without sending when it cannot sign
+		// the request: nothing was activated.
+		c.Close(ctx)
+		return nil, errors.Errorf("the session could not be activated: the request could not be signed")
+	}
+
+	var adopted []*Subscription
+	if len(subs) > 0 {
+		c.subMux.Lock()
+		for _, old := range subs {
+			if old == nil || c.subs[old.SubscriptionID] != nil {
+				continue
+			}
+			a := old.adoptedBy(c)
+			c.subs[a.SubscriptionID] = a
+			adopted = append(adopted, a)
+		}
+		c.updatePublishTimeout_NeedsSubMuxLock()
+		c.subsGen.Add(1)
+		c.subMux.Unlock()
+		stats.Subscription().Add("Count", int64(len(adopted)))
 	}
 	c.setState(ctx, Connected)
 
@@ -309,18 +369,29 @@ func (c *Client) Connect(ctx context.Context) error {
 		}()
 	})
 
+	// The publish loop starts paused, until a subscription exists
+	// (Subscribe resumes it): resumed subscriptions exist already.
+	if len(adopted) > 0 {
+		c.resumeSubscriptions(ctx)
+	}
+
 	// todo(fs): we might need to guard this with an option in case of a broken
 	// todo(fs): server. For the sake of simplicity we left the option out but
 	// todo(fs): see the discussion in https://github.com/gopcua/opcua/pull/512
 	// todo(fs): and you should find a commit that implements this option.
 	if err := c.UpdateNamespaces(ctx); err != nil {
+		if resume != nil {
+			// The session was activated here: hand it back unclosed, so
+			// the caller can still close it (or try again) itself.
+			_, _ = c.DetachSession(ctx)
+		}
 		c.Close(ctx)
 		stats.RecordError(err)
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return adopted, nil
 }
 
 // monitor manages connection alteration

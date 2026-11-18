@@ -417,6 +417,16 @@ func (c *Client) monitorSubscriptions(ctx context.Context) {
 	dlog := debug.NewPrefixLogger("sub: ")
 	defer dlog.Print("done")
 
+	// Paused until a subscription exists: Subscribe, Resume and
+	// TransferSubscriptions resume it, before or after this point (the
+	// resume channel keeps the signal).
+	dlog.Print("start paused")
+	select {
+	case <-ctx.Done():
+		return
+	case <-c.resumech:
+	}
+
 publish:
 	for {
 		select {
