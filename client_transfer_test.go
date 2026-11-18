@@ -146,6 +146,39 @@ func TestNotifySubscription_CarriesTheSequenceNumber(t *testing.T) {
 		n := <-ch
 		require.Equal(t, uint32(17), n.SequenceNumber)
 		require.Equal(t, sent, n.PublishTime, "and the server's time of sending it")
+		require.False(t, n.ReceivedAt.IsZero(), "and the client's time of receiving it, stamped as it arrived")
 		require.Equal(t, uint32(3), n.SubscriptionID)
+	}
+}
+
+// ReceivedAt is stamped as the message arrives, not when the owner takes
+// it: a notification that waited behind a backlog keeps its arrival time.
+func TestNotifySubscription_StampsTheArrivalNotTheTake(t *testing.T) {
+	c, err := NewClient("opc.tcp://example.com:4840")
+	require.NoError(t, err)
+	ch := make(chan *PublishNotificationData) // nobody takes it yet: a backlog
+	sub := &Subscription{SubscriptionID: 3, Notifs: ch}
+	arrived := time.Now()
+	go c.notifySubscription(context.Background(), sub, &ua.NotificationMessage{
+		SequenceNumber:   1,
+		NotificationData: []*ua.ExtensionObject{{Value: &ua.DataChangeNotification{}}},
+	})
+	time.Sleep(300 * time.Millisecond)
+	n := <-ch
+	taken := time.Now()
+	require.True(t, n.ReceivedAt.Before(taken.Add(-200*time.Millisecond)), "stamped on arrival (%s), not when taken (%s)", n.ReceivedAt, taken)
+	require.False(t, n.ReceivedAt.Before(arrived))
+}
+
+// The service results that say the session or the channel is gone are a
+// lost link; the others are one request's answer.
+func TestLinkFatal(t *testing.T) {
+	for _, s := range []ua.StatusCode{ua.StatusBadSessionIDInvalid, ua.StatusBadSessionClosed, ua.StatusBadSessionNotActivated,
+		ua.StatusBadSecureChannelIDInvalid, ua.StatusBadSecureChannelClosed, ua.StatusBadConnectionClosed,
+		ua.StatusBadServerHalted, ua.StatusBadSecureChannelTokenUnknown} {
+		require.True(t, linkFatal(s), "%v", s)
+	}
+	for _, s := range []ua.StatusCode{ua.StatusBadServiceUnsupported, ua.StatusBadTooManyPublishRequests, ua.StatusBadNodeIDUnknown} {
+		require.False(t, linkFatal(s), "%v", s)
 	}
 }

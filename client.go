@@ -741,7 +741,8 @@ func (c *Client) monitor(ctx context.Context) {
 func linkFatal(s ua.StatusCode) bool {
 	switch s {
 	case ua.StatusBadSessionIDInvalid, ua.StatusBadSessionClosed, ua.StatusBadSessionNotActivated,
-		ua.StatusBadSecureChannelIDInvalid, ua.StatusBadSecureChannelClosed, ua.StatusBadConnectionClosed:
+		ua.StatusBadSecureChannelIDInvalid, ua.StatusBadSecureChannelClosed, ua.StatusBadConnectionClosed,
+		ua.StatusBadServerHalted, ua.StatusBadSecureChannelTokenUnknown:
 		return true
 	}
 	return false

@@ -342,6 +342,7 @@ func (c *Client) notifyAllSubscriptionsOfError(ctx context.Context, err error) {
 }
 
 func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, notif *ua.NotificationMessage) {
+	receivedAt := time.Now() // before any of it waits in Notifs
 	// todo(fs): response.Results contains the status codes of which messages were
 	// todo(fs): were successfully removed from the transmission queue on the server.
 	// todo(fs): The client sent the list of ids in the *previous* PublishRequest.
@@ -365,6 +366,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
 				PublishTime:    notif.PublishTime,
+				ReceivedAt:     receivedAt,
 				Error:          errors.Errorf("missing NotificationData parameter"),
 			})
 			continue
@@ -381,6 +383,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
 				PublishTime:    notif.PublishTime,
+				ReceivedAt:     receivedAt,
 				Value:          data.Value,
 			})
 
@@ -390,6 +393,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
 				PublishTime:    notif.PublishTime,
+				ReceivedAt:     receivedAt,
 				Error:          errors.Errorf("unknown NotificationData parameter: %T", data.Value),
 			})
 		}

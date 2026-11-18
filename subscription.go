@@ -86,8 +86,14 @@ type PublishNotificationData struct {
 	// relates the server's clock to the client's. Zero for an error that
 	// came in no message.
 	PublishTime time.Time
-	Error       error
-	Value       interface{}
+	// ReceivedAt is when the client received the message, by the client's
+	// clock, stamped as it arrived: before it waits in Notifs behind what
+	// the owner has not taken yet. With PublishTime it relates the two
+	// clocks without counting that wait. Zero for an error that came in no
+	// message.
+	ReceivedAt time.Time
+	Error      error
+	Value      interface{}
 }
 
 // Cancel stops the subscription and removes it
