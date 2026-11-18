@@ -428,8 +428,10 @@ func (c *Client) monitor(ctx context.Context) {
 			// A response that arrived with a Bad service result is that
 			// request's answer (its handler has it): the channel is fine.
 			// Only a client that reconnects by itself acts on it below.
+			// Except the results that say the session or the channel is
+			// gone: those are a lost link, whoever reconnects.
 			var serviceResult uasc.ServiceResultError
-			if !c.cfg.sechan.AutoReconnect && errors.As(err, &serviceResult) {
+			if !c.cfg.sechan.AutoReconnect && errors.As(err, &serviceResult) && !linkFatal(serviceResult.Status) {
 				continue
 			}
 
@@ -731,6 +733,18 @@ func (c *Client) monitor(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// linkFatal reports whether a service result says the session or the
+// secure channel the client works on is gone: nothing more can be done on
+// them, so it is a lost link, not one request's answer.
+func linkFatal(s ua.StatusCode) bool {
+	switch s {
+	case ua.StatusBadSessionIDInvalid, ua.StatusBadSessionClosed, ua.StatusBadSessionNotActivated,
+		ua.StatusBadSecureChannelIDInvalid, ua.StatusBadSecureChannelClosed, ua.StatusBadConnectionClosed:
+		return true
+	}
+	return false
 }
 
 // Dial establishes a secure channel.
