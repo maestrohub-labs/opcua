@@ -73,6 +73,7 @@ func (c *Client) Subscribe(ctx context.Context, params *SubscriptionParameters, 
 
 	c.subs[sub.SubscriptionID] = sub
 	c.updatePublishTimeout_NeedsSubMuxLock()
+	c.subsGen.Add(1)
 	return sub, nil
 }
 
@@ -362,6 +363,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 		if data == nil || data.Value == nil {
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
+				SequenceNumber: notif.SequenceNumber,
 				Error:          errors.Errorf("missing NotificationData parameter"),
 			})
 			continue
@@ -376,6 +378,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 			*ua.StatusChangeNotification:
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
+				SequenceNumber: notif.SequenceNumber,
 				Value:          data.Value,
 			})
 
@@ -383,6 +386,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 		default:
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
+				SequenceNumber: notif.SequenceNumber,
 				Error:          errors.Errorf("unknown NotificationData parameter: %T", data.Value),
 			})
 		}
@@ -447,8 +451,16 @@ publish:
 			//
 			// publish() blocks until a PublishResponse
 			// is received or the context is cancelled.
+			gen := c.subsGen.Load()
 			if err := c.publish(ctx); err != nil {
 				dlog.Print("error: ", err.Error())
+				// A Bad_NoSubscription that answered a Publish sent before
+				// a subscription was registered is stale: pausing on it
+				// would stop the loop with a subscription to publish for,
+				// if the registration's resume was taken before the pause.
+				if errors.Is(err, ua.StatusBadNoSubscription) && c.subsGen.Load() != gen {
+					continue
+				}
 				c.pauseSubscriptions(ctx)
 			}
 		}

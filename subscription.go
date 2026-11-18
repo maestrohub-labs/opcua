@@ -75,6 +75,12 @@ func NewMonitoredItemCreateRequestWithDefaults(nodeID *ua.NodeID, attributeID ua
 
 type PublishNotificationData struct {
 	SubscriptionID uint32
+	// SequenceNumber is the sequence number of the NotificationMessage the
+	// value came in (Part 4, 7.21), the same for every NotificationData of
+	// one message; 0 for an error that came in no message. A client that
+	// asks the server for messages again (Republish, after
+	// TransferSubscriptions) tells one it already has by it.
+	SequenceNumber uint32
 	Error          error
 	Value          interface{}
 }

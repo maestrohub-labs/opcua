@@ -170,6 +170,12 @@ type Client struct {
 	// subs is the set of active subscriptions by id.
 	subs map[uint32]*Subscription
 
+	// subsGen counts the registrations of subscriptions (Subscribe,
+	// TransferSubscriptions): a Publish sent before one may come back
+	// Bad_NoSubscription, and the publish loop must not pause on that
+	// answer once a subscription exists (monitorSubscriptions).
+	subsGen atomic.Uint64
+
 	// pendingAcks contains the pending subscription acknowledgements
 	// for all active subscriptions.
 	pendingAcks []*ua.SubscriptionAcknowledgement
