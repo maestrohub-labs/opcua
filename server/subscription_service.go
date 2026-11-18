@@ -159,7 +159,7 @@ func (s *SubscriptionService) Publish(sc *uasc.SecureChannel, r ua.Request, reqI
 	}
 
 	select {
-	case session.PublishRequests <- PubReq{Req: req, ID: reqID}:
+	case session.PublishRequests <- PubReq{Req: req, ID: reqID, Channel: sc}:
 	default:
 		if s.srv.cfg.logger != nil {
 			s.srv.cfg.logger.Warn("Too many publish reqs.")
@@ -254,6 +254,21 @@ type PubReq struct {
 
 	// The request ID (from the header) of the publish request.  This has to be used when replying.
 	ID uint32
+
+	// Channel is the secure channel the request came on: its answer goes
+	// there (Part 4, 5.13.5). A session outlives its channel, and a client
+	// that activated it over a new one publishes there; answering on the
+	// channel the subscription was created on would send to a dead one.
+	Channel *uasc.SecureChannel
+}
+
+// channel is where pubreq's answer goes: the channel it came on, else
+// fallback.
+func (r PubReq) channel(fallback *uasc.SecureChannel) *uasc.SecureChannel {
+	if r.Channel != nil {
+		return r.Channel
+	}
+	return fallback
 }
 
 // This is the type that with its run() function will work in the bakground fullfilling subscription
@@ -329,7 +344,7 @@ func (s *Subscription) keepalive(pubreq PubReq) error {
 		Results:                  []ua.StatusCode{},
 		DiagnosticInfos:          []*ua.DiagnosticInfo{},
 	}
-	err := s.Channel.SendResponseWithContext(context.Background(), pubreq.ID, response)
+	err := pubreq.channel(s.Channel).SendResponseWithContext(context.Background(), pubreq.ID, response)
 	if err != nil {
 		return err
 	}
@@ -387,12 +402,11 @@ func (s *Subscription) run() {
 						keepalive_counter = 0
 						select {
 						case pubreq := <-s.Session.PublishRequests:
-							err := s.keepalive(pubreq)
-							if err != nil {
-								if s.srv.srv.cfg.logger != nil {
-									s.srv.srv.cfg.logger.Warn("problem sending keepalive to subscription #%d: %v", s.ID, err)
-								}
-								return
+							// A keepalive whose request's channel is gone is
+							// lost with it; the subscription lives on (its
+							// session may be activated over a new channel).
+							if err := s.keepalive(pubreq); err != nil && s.srv.srv.cfg.logger != nil {
+								s.srv.srv.cfg.logger.Warn("problem sending keepalive to subscription #%d: %v", s.ID, err)
 							}
 						default:
 							lifetime_counter++
@@ -493,13 +507,26 @@ func (s *Subscription) run() {
 			Results:                  []ua.StatusCode{},
 			DiagnosticInfos:          []*ua.DiagnosticInfo{},
 		}
-		err := s.Channel.SendResponseWithContext(context.Background(), pubreq.ID, response)
-		if err != nil {
-			if s.srv.srv.cfg.logger != nil {
-				s.srv.srv.cfg.logger.Error("problem sending channel response: %v", err)
-				s.srv.srv.cfg.logger.Error("Killing subscription %d", s.ID)
+		// A request whose channel is gone (its client lost the link; the
+		// session lives on, and may be activated over a new channel) cannot
+		// be answered: the message goes to the next Publish request, with
+		// the same sequence number, as a server that keeps it for the
+		// client would do. The subscription lives on.
+		for {
+			err := pubreq.channel(s.Channel).SendResponseWithContext(context.Background(), pubreq.ID, response)
+			if err == nil {
+				break
 			}
-			return
+			if s.srv.srv.cfg.logger != nil {
+				s.srv.srv.cfg.logger.Warn("problem sending publish response on subscription %d, kept for the next publish request: %v", s.ID, err)
+			}
+			select {
+			case <-s.shutdown:
+				return
+			case pubreq = <-s.Session.PublishRequests:
+				response.ResponseHeader.RequestHandle = pubreq.Req.RequestHeader.RequestHandle
+				response.ResponseHeader.Timestamp = time.Now()
+			}
 		}
 		if s.srv.srv.cfg.logger != nil {
 			s.srv.srv.cfg.logger.Debug("Published %d items OK for %d", len(publishQueue), s.ID)
