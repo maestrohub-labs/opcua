@@ -354,6 +354,14 @@ func (c *Client) monitor(ctx context.Context) {
 				continue
 			}
 
+			// A response that arrived with a Bad service result is that
+			// request's answer (its handler has it): the channel is fine.
+			// Only a client that reconnects by itself acts on it below.
+			var serviceResult uasc.ServiceResultError
+			if !c.cfg.sechan.AutoReconnect && errors.As(err, &serviceResult) {
+				continue
+			}
+
 			// tell the handler the connection is disconnected
 			c.setState(ctx, Disconnected)
 			dlog.Print("disconnected")

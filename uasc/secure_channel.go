@@ -251,6 +251,28 @@ func (s *SecureChannel) getActiveChannelInstance() (*channelInstance, error) {
 	return s.activeInstance, nil
 }
 
+// ServiceResultError is what the channel reports on its error channel for
+// a response that arrived intact with a Bad service result: one request's
+// answer, not a failure of the channel. The request's handler gets the
+// status itself; a client that does not reconnect by itself must not take
+// this for a lost link. Unwrap is the status.
+type ServiceResultError struct {
+	Status ua.StatusCode
+}
+
+func (e ServiceResultError) Error() string { return "service result: " + e.Status.Error() }
+func (e ServiceResultError) Unwrap() error { return e.Status }
+
+// channelError is the error the channel reports for msg on its error
+// channel: a ServiceResultError for a decoded response with a Bad service
+// result, the error itself otherwise.
+func channelError(msg *MessageBody) error {
+	if status, ok := msg.Err.(ua.StatusCode); ok && msg.body != nil {
+		return ServiceResultError{Status: status}
+	}
+	return msg.Err
+}
+
 func (s *SecureChannel) dispatcher() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -271,7 +293,7 @@ func (s *SecureChannel) dispatcher() {
 					return
 				default:
 					select {
-					case s.errch <- msg.Err:
+					case s.errch <- channelError(msg):
 					default:
 					}
 				}
