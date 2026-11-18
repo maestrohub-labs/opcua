@@ -81,8 +81,13 @@ type PublishNotificationData struct {
 	// asks the server for messages again (Republish, after
 	// TransferSubscriptions) tells one it already has by it.
 	SequenceNumber uint32
-	Error          error
-	Value          interface{}
+	// PublishTime is when the server sent the NotificationMessage, by the
+	// server's clock (Part 4, 7.21): with the time it was received, it
+	// relates the server's clock to the client's. Zero for an error that
+	// came in no message.
+	PublishTime time.Time
+	Error       error
+	Value       interface{}
 }
 
 // Cancel stops the subscription and removes it

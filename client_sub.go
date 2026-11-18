@@ -364,6 +364,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
+				PublishTime:    notif.PublishTime,
 				Error:          errors.Errorf("missing NotificationData parameter"),
 			})
 			continue
@@ -379,6 +380,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
+				PublishTime:    notif.PublishTime,
 				Value:          data.Value,
 			})
 
@@ -387,6 +389,7 @@ func (c *Client) notifySubscription(ctx context.Context, sub *Subscription, noti
 			sub.notify(ctx, &PublishNotificationData{
 				SubscriptionID: sub.SubscriptionID,
 				SequenceNumber: notif.SequenceNumber,
+				PublishTime:    notif.PublishTime,
 				Error:          errors.Errorf("unknown NotificationData parameter: %T", data.Value),
 			})
 		}

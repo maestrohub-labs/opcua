@@ -3,6 +3,7 @@ package opcua
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/maestrohub-labs/opcua/ua"
 	"github.com/stretchr/testify/require"
@@ -131,8 +132,10 @@ func TestNotifySubscription_CarriesTheSequenceNumber(t *testing.T) {
 	require.NoError(t, err)
 	ch := make(chan *PublishNotificationData, 4)
 	sub := &Subscription{SubscriptionID: 3, Notifs: ch}
+	sent := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
 	c.notifySubscription(context.Background(), sub, &ua.NotificationMessage{
 		SequenceNumber: 17,
+		PublishTime:    sent,
 		NotificationData: []*ua.ExtensionObject{
 			{Value: &ua.DataChangeNotification{}},
 			{Value: &ua.DataChangeNotification{}},
@@ -142,6 +145,7 @@ func TestNotifySubscription_CarriesTheSequenceNumber(t *testing.T) {
 	for range 2 {
 		n := <-ch
 		require.Equal(t, uint32(17), n.SequenceNumber)
+		require.Equal(t, sent, n.PublishTime, "and the server's time of sending it")
 		require.Equal(t, uint32(3), n.SubscriptionID)
 	}
 }
